@@ -1,5 +1,6 @@
 import wave
 import matplotlib.pyplot as plt
+import scipy
 from scipy.io.wavfile import read
 import numpy as np
 import sys
@@ -107,10 +108,45 @@ def chunkFile(length, gap):
 
     #should be a variable called audio data or something
     #go through that list of numbers and split it up into chunks
-
     return chunkedFrameArray
 
-        
+def rms(filteredList):
+    rms = np.sqrt(np.mean(filteredList**2))
+    return rms
+
+def filterChunkList(chunkArray):
+    # ------------------- INPUTS -------------------
+    #chunkArray --> list of sub lists which are each made up of ints, representing a complete wave file
+    # ----------------------------------------------   
+    minFrequency = 50
+    maxFrequency = 6000
+    frequencyInterval = 50 
+    filteredChunkArray = []
+
+    for i in range(0, len(chunkArray), 1):
+        tempFilterHolder = []
+        t = i*len(chunkArray[i])
+
+        for j in range(minFrequency, maxFrequency, int(frequencyInterval/2)):
+            #apply a bunch of different butterworth filters
+            sos = scipy.signal.butter(4, (j-(frequencyInterval/2), j+(frequencyInterval/2)), btype='bandpass', analog=False, output='sos', fs=16_000) 
+            filteredSignal =  scipy.signal.sosfilt(sos, chunkArray[i])
+
+            #calculate the RMS of the butterworth filter
+            filteredSignal_RMS = rms(filteredSignal)
+            synthesizedFilter = []
+
+            for k in range(i*len(chunkArray[i]),i*len(chunkArray[i])+ len(chunkArray)):\
+                synthesizedFilter.append(filteredSignal_RMS*np.sin(2*np.pi*j*k))
+
+            tempFilterHolder.append(synthesizedFilter)
+        tempFilterHolderArray = np.array(tempFilterHolder)
+        sumOfWaves = np.sum(tempFilterHolderArray, axis=0)
+        filteredChunkArray.append(sumOfWaves)
+    
+    #now: filteredChunkArray holds lists of filtered signals
+    return np.concatenate(filteredChunkArray, axis=0)
+
         
 def main():
     plotWave("Recording.wav", "Initial wave form") #plots the file titles output.wav
@@ -119,7 +155,14 @@ def main():
     writeFile(frameArray) #writes the resultant wave form to a file titled "output.wav"
     plotWave("output.wav", "Decimated wave form") #plots the file titles output.wav
     chunked = chunkFile(160,0)
+    #print(filterChunkList(chunked))
+    finalArray = filterChunkList(chunked)
     #print(chunked)
-    
+    #fnext up: pass each value in chunk through a BUNCH of bandpass filters, ending up with a list of CHUNKS made up of a list of FILTERED CHUNKS which are themselves lists of int16s
+    print("length of new array is", len(finalArray))
+    #scipy.io.wavfile.write("finaloutput.wav",16_000, finalArray)
+    writeFile(finalArray.astype(np.int16).tobytes())
+    plotWave("output.wav", "Final final wave form") #plots the file titled output.wav
+
 
 main()
