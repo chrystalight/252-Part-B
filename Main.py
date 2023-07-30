@@ -49,13 +49,14 @@ def plotWave(fileName, title):
     audio = input_data[1]
     # plot the first 100000 samples
     # we should probably find a better way to pick this length
-    plt.plot(audio[0:100000])
+    plt.plot(audio)
     # label the axes
     plt.ylabel("Amplitude")
     plt.xlabel("Time")
     # set the title  
     plt.title(title)
     # display the plot
+    plt.savefig("test_output_wave_plot.png")
     plt.show()
 
     
@@ -120,26 +121,35 @@ def filterChunkList(chunkArray):
     # ----------------------------------------------   
     minFrequency = 50
     maxFrequency = 6000
-    frequencyInterval = 50 
+    frequencyInterval = 100 
     filteredChunkArray = []
+    chunkLength = 160*3 
 
     for i in range(0, len(chunkArray), 1):
         tempFilterHolder = []
-        t = i*len(chunkArray[i])
+        
+        chunkLength = len(chunkArray[i])
+        start_time = i*chunkLength
+        end_time = start_time + chunkLength - 1
+        time_array = np.linspace(start_time, end_time, chunkLength)
+        
 
-        for j in range(minFrequency, maxFrequency, int(frequencyInterval/2)):
+
+        for j in range(minFrequency, maxFrequency, int(frequencyInterval)):
             #apply a bunch of different butterworth filters
-            sos = scipy.signal.butter(4, (j-(frequencyInterval/2), j+(frequencyInterval/2)), btype='bandpass', analog=False, output='sos', fs=16_000) 
+            minBandpass = j-(frequencyInterval/2)
+            maxBandpass = j+(frequencyInterval/2)
+            if minBandpass < 1:
+                minBandpass = 1
+            sos = scipy.signal.butter(4, [minBandpass, maxBandpass] , btype='bandpass', analog=False, output='sos', fs=16_000) 
             filteredSignal =  scipy.signal.sosfilt(sos, chunkArray[i])
 
             #calculate the RMS of the butterworth filter
             filteredSignal_RMS = rms(filteredSignal)
-            synthesizedFilter = []
+            synthesizedSignal = filteredSignal_RMS * np.ones(160) #*np.sin(2*np.pi*j*time_array)
 
-            for k in range(i*len(chunkArray[i]),i*len(chunkArray[i])+ len(chunkArray)):\
-                synthesizedFilter.append(filteredSignal_RMS*np.sin(2*np.pi*j*k))
-
-            tempFilterHolder.append(synthesizedFilter)
+            tempFilterHolder.append(synthesizedSignal)
+            
         tempFilterHolderArray = np.array(tempFilterHolder)
         sumOfWaves = np.sum(tempFilterHolderArray, axis=0)
         filteredChunkArray.append(sumOfWaves)
