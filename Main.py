@@ -120,10 +120,11 @@ def filterChunkList(chunkArray):
     #chunkArray --> list of sub lists which are each made up of ints, representing a complete wave file
     # ----------------------------------------------   
     minFrequency = 50
-    maxFrequency = 6000
-    frequencyInterval = 100 
+    maxFrequency = 7000
+    frequencyInterval = 150 
     filteredChunkArray = []
-    chunkLength = 160*3 
+    chunkLength = 160*5
+    samplingRate = 16_000
 
     for i in range(0, len(chunkArray), 1):
         tempFilterHolder = []
@@ -131,7 +132,9 @@ def filterChunkList(chunkArray):
         chunkLength = len(chunkArray[i])
         start_time = i*chunkLength
         end_time = start_time + chunkLength - 1
-        time_array = np.linspace(start_time, end_time, chunkLength)
+        timeInSamples = np.linspace(start_time, end_time, chunkLength)
+        timeInSeconds = timeInSamples/samplingRate
+
         
 
 
@@ -146,7 +149,8 @@ def filterChunkList(chunkArray):
 
             #calculate the RMS of the butterworth filter
             filteredSignal_RMS = rms(filteredSignal)
-            synthesizedSignal = filteredSignal_RMS * np.ones(160) #*np.sin(2*np.pi*j*time_array)
+            sinArray = np.sin(2*np.pi*j*timeInSeconds)
+            synthesizedSignal = filteredSignal_RMS * sinArray
 
             tempFilterHolder.append(synthesizedSignal)
             
