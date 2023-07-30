@@ -32,8 +32,8 @@ def downsample(frameArray):
     return downsampledFrameArray
 
 
-def writeFile(frameArray):
-    with wave.open("output.wav", "wb") as outputFile: 
+def writeFile(frameArray, fileName):
+    with wave.open(fileName, "wb") as outputFile: 
         outputFile.setnchannels(1)
         outputFile.setsampwidth(2)
         outputFile.setframerate(16_000)
@@ -163,20 +163,26 @@ def filterChunkList(chunkArray):
 
         
 def main():
-    plotWave("Recording.wav", "Initial wave form") #plots the file titles output.wav
+    #plotWave("Recording.wav", "Initial wave form") #plots the file titles output.wav
     frameArray = readFile() #reads the file titled "Recording.wav" and processes it to 1 channel 16khz
-    #print(frameArray)
-    writeFile(frameArray) #writes the resultant wave form to a file titled "output.wav"
-    plotWave("output.wav", "Decimated wave form") #plots the file titles output.wav
+    writeFile(frameArray, "output.wav") #writes the resultant wave form to a file titled "output.wav"
+    #plotWave("output.wav", "Decimated wave form") #plots the file titles output.wav
     chunked = chunkFile(160,0)
-    #print(filterChunkList(chunked))
     finalArray = filterChunkList(chunked)
-    #print(chunked)
-    #fnext up: pass each value in chunk through a BUNCH of bandpass filters, ending up with a list of CHUNKS made up of a list of FILTERED CHUNKS which are themselves lists of int16s
     print("length of new array is", len(finalArray))
-    #scipy.io.wavfile.write("finaloutput.wav",16_000, finalArray)
-    writeFile(finalArray.astype(np.int16).tobytes())
-    plotWave("output.wav", "Final final wave form") #plots the file titled output.wav
+    writeFile(finalArray.astype(np.int16).tobytes(), "output.wav")
+    #plotWave("output.wav", "Final final wave form") #plots the file titled output.wav
 
+    chunkedWithGaps = chunkFile(160, 160)
+    chunkedWithGapsArray = filterChunkList(chunkedWithGaps)
+    writeFile(chunkedWithGapsArray.astype(np.int16).tobytes(), "output with 10 ms gaps.wav")
+
+    #chunkedWithOverlaps = chunkFile(160, -80)
+    #chunkedWithOverlapsArray = filterChunkList(chunkedWithOverlaps)
+    #writeFile(chunkedWithOverlapsArray.astype(np.int16).tobytes(), "output with 5ms overlaps.wav")
+
+    biggerChunks = chunkFile (320, 0)
+    biggerChunksArray = filterChunkList(biggerChunks)
+    writeFile(biggerChunksArray.astype(np.int16).tobytes(), "output with double chunk length.wav")
 
 main()
