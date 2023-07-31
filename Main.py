@@ -5,26 +5,32 @@ from scipy.io.wavfile import read
 import numpy as np
 import sys
 
-#import matplotlib.pyplot as plt
-#import scipy
-#inputFile = wave.open("Recording.wav", "rb")
-
 def convertToMono(frameArray):
-    #assume it is stereo
+    #----------------INPUTS-----------
+    #frameArray is a STEREO wav file in the form of a bit array
+    #if this function is passed a MONO wav  it will not work
+    #---------------------------------
     
     monoFrameArray = []
-    #print("length of the input frame array is", len(frameArray))
+    
+    #deletes every other set of two bits to halve the information in the channel
     for i in range(0,len(frameArray),4):
         monoFrameArray.append(frameArray[i])
         monoFrameArray.append(frameArray[i+1])
+        
+    #convert the array back to a bytes object for the Wave library
     monoFrameArray = bytes(monoFrameArray)
-    #print("lenght of monoframe array is", len(monoFrameArray))
     return monoFrameArray
 
 def downsample(frameArray):
-    #function assumes you're passing it a mono 48khz wav file
-    #will downsize to 16khz by dropping every 3rd frame (2 bytes)
+    #----------------INPUTS-----------
+    #frameArray is a MONO, 48khz wav file in the form of a bit array
+    #if this function is passed a STEREO wav  it will not work    
+    #---------------------------------
+
     downsampledFrameArray=[]
+    
+    #will samples to 16khz by dropping every 3rd frame (2 bytes)
     for i in range(0,len(frameArray),6):
         downsampledFrameArray.append(frameArray[i])
         downsampledFrameArray.append(frameArray[i+1])
@@ -33,6 +39,11 @@ def downsample(frameArray):
 
 
 def writeFile(frameArray, fileName):
+    #----------------INPUTS-----------
+    #frameArray is an array of bytes 
+    #fileName is a string that ends in .wav 
+    #---------------------------------
+
     with wave.open(fileName, "wb") as outputFile: 
         outputFile.setnchannels(1)
         outputFile.setsampwidth(2)
@@ -44,56 +55,55 @@ def plotWave(fileName, title):
     #input file name as a string: "output.wav"
     #input title as a string: "title"
     # ----------------------------------------------
+    
     input_data = read(fileName)
-    print(input_data)
     audio = input_data[1]
-    # plot the first 100000 samples
-    # we should probably find a better way to pick this length
     plt.plot(audio)
-    # label the axes
+
+    #label the axes
     plt.ylabel("Amplitude")
     plt.xlabel("Time")
-    # set the title  
+    #set the title  
     plt.title(title)
-    # display the plot
-    plt.savefig("test_output_wave_plot.png")
-    plt.show()
+    #save the plot
+    plt.savefig(title+"png")
 
-    
-        
-def readFile():
+
+def processFile():
     with wave.open("Recording.wav", "rb") as inputFile:
         #opened wav file in such a way that it will automatically close when we are done with it (when the with block ends)
         #good for if we end the program early/terminate it (dont have to manually call close every time)
         frameRate = inputFile.getframerate()
         frameNumber = inputFile.getnframes()
         frameArray = inputFile.readframes(frameNumber)
-        sampWidth = inputFile.getsampwidth()
         nChannels = inputFile.getnchannels()
         
     if nChannels>2:
-        raise Exception("oops! error message: there are too many channels")
+        raise Exception("There are too many channels! Input either a Mono or a Stero wave file.")
     elif nChannels == 2:
         #we have to cut out half of the data (leave it only with one channel)
         frameArray = convertToMono(frameArray)
     
     if frameRate == 48_000:
+        #we have to downsample to 16k
         frameArray = downsample(frameArray)
     elif frameRate != 16_000:
-        raise Exception("error: your frame rate needs to be either 48k or 16k")
+        raise Exception("Check your frame rate! Input either 48k or 16k")
     
     return frameArray
 
 def chunkFile(length, gap):
     # ------------------- INPUTS -------------------
-    #input chunk length and gap in frames (ms*16)
-    #a negative chunkGap will result in frames overlapping
+    # input chunk length and gap in frames (ms*16)
+    # negative chunkGap will result in frames overlapping (except not really, it explodes the code later on)
     # ----------------------------------------------
 
-    inputData = read("output.wav")
-    audioData = inputData[1]
+    #use scipy to read the processed file (16khz mono) to an array of objects
+    inputData = read("processed.wav")
+
+    #object at index 0 of input data is an array
     #audio data is an array of values where each value represents the data in one frame of the wave file
-    #we iterate through the values at a rate of 16khz
+    audioData = inputData[1]
 
     chunkLength = length
     chunkGap = gap
@@ -101,14 +111,16 @@ def chunkFile(length, gap):
     #iterate through the audioData array and add lists to a new list, where each list is chunk_frames long
     chunkedFrameArray=[]
 
+    #for every value between 0 and the end of the audio list, start a new chunk, but jump up by chunk length + chunk gap each time
     for i in range(0,len(audioData),chunkLength+chunkGap):
+
+        #chunkHolder is a list that temporarily stores the chunk before we add it as an array to chunkedFrameArray, which is an array of arrays
         chunkHolder=[]
         for j in range(chunkLength):
+            #starting at i (j=0) where i is the index of the first value of the active chunk, add each consecutive value till we hit chunk length
             chunkHolder.append(audioData[i+j])
         chunkedFrameArray.append(chunkHolder)
-
-    #should be a variable called audio data or something
-    #go through that list of numbers and split it up into chunks
+        
     return chunkedFrameArray
 
 def rms(filteredList):
@@ -163,26 +175,24 @@ def filterChunkList(chunkArray):
 
         
 def main():
-    #plotWave("Recording.wav", "Initial wave form") #plots the file titles output.wav
-    frameArray = readFile() #reads the file titled "Recording.wav" and processes it to 1 channel 16khz
-    writeFile(frameArray, "output.wav") #writes the resultant wave form to a file titled "output.wav"
-    #plotWave("output.wav", "Decimated wave form") #plots the file titles output.wav
+    plotWave("Recording.wav", "Initial wave form") #plots the file titles output.wav
+    frameArray = processFile() #reads the file titled "Recording.wav" and processes it to 1 channel 16khz
+    writeFile(frameArray, "processed.wav") #writes the resultant wave form to a file titled "output.wav"
+    plotWave("output.wav", "Decimated wave form") #plots the file titles output.wav
+
     chunked = chunkFile(160,0)
     finalArray = filterChunkList(chunked)
-    print("length of new array is", len(finalArray))
     writeFile(finalArray.astype(np.int16).tobytes(), "output.wav")
-    #plotWave("output.wav", "Final final wave form") #plots the file titled output.wav
+    plotWave("output.wav", "10ms chunks, no gaps") #plots the file titled output.wav
 
     chunkedWithGaps = chunkFile(160, 160)
     chunkedWithGapsArray = filterChunkList(chunkedWithGaps)
     writeFile(chunkedWithGapsArray.astype(np.int16).tobytes(), "output with 10 ms gaps.wav")
-
-    #chunkedWithOverlaps = chunkFile(160, -80)
-    #chunkedWithOverlapsArray = filterChunkList(chunkedWithOverlaps)
-    #writeFile(chunkedWithOverlapsArray.astype(np.int16).tobytes(), "output with 5ms overlaps.wav")
+    plotWave("output.wav", "10ms chunks, 10ms gaps")
 
     biggerChunks = chunkFile (320, 0)
     biggerChunksArray = filterChunkList(biggerChunks)
     writeFile(biggerChunksArray.astype(np.int16).tobytes(), "output with double chunk length.wav")
+    plotWave("output.wav", "20ms chunks, no gaps")
 
 main()
