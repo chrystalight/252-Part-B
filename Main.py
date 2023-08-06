@@ -67,6 +67,7 @@ def plotWave(fileName, title):
     plt.title(title)
     #save the plot
     plt.savefig(title+"png")
+    plt.clf()
 
 
 def processFile():
@@ -177,8 +178,8 @@ def filterChunkList(chunkArray):
 def main():
     plotWave("Recording.wav", "Initial wave form") #plots the file titles output.wav
     frameArray = processFile() #reads the file titled "Recording.wav" and processes it to 1 channel 16khz
-    writeFile(frameArray, "processed.wav") #writes the resultant wave form to a file titled "output.wav"
-    plotWave("output.wav", "Decimated wave form") #plots the file titles output.wav
+    writeFile(frameArray, "processed.wav") #writes the resultant wave form to a file titled "processed.wav"
+    plotWave("processed.wav", "Decimated wave form") #plots the file titles processed.wav
 
     chunked = chunkFile(160,0)
     finalArray = filterChunkList(chunked)
@@ -188,11 +189,16 @@ def main():
     chunkedWithGaps = chunkFile(160, 160)
     chunkedWithGapsArray = filterChunkList(chunkedWithGaps)
     writeFile(chunkedWithGapsArray.astype(np.int16).tobytes(), "output with 10 ms gaps.wav")
-    plotWave("output.wav", "10ms chunks, 10ms gaps")
+    plotWave("output with 10 ms gaps.wav", "10ms chunks, 10ms gaps")
+
+    # chunkedWithOverlaps = chunkFile(160, -160)
+    # chunkedWithOverlapsArray = filterChunkList(chunkedWithOverlaps)
+    # writeFile(chunkedWithOverlapsArray.astype(np.int16).tobytes(), "output with 10 ms overlap.wav")
+    # plotWave("output with 30 ms overlap.wav", "10ms chunks, 10ms overlap")
 
     biggerChunks = chunkFile (320, 0)
     biggerChunksArray = filterChunkList(biggerChunks)
     writeFile(biggerChunksArray.astype(np.int16).tobytes(), "output with double chunk length.wav")
-    plotWave("output.wav", "20ms chunks, no gaps")
+    plotWave("output with double chunk length.wav", "20ms chunks, no gaps")
 
 main()
