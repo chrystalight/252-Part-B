@@ -149,12 +149,17 @@ def filterChunkList(chunkArray):
     #---------------------------------------------------------
 
     for i in range(0, len(chunkArray), 1):
+        #this will hold our filtered bits till we add them back to our main filteredChunkArray
         tempFilterHolder = []
         
         chunkLength = len(chunkArray[i])
+        #defines time t at the start of the chunk
         start_time = i*chunkLength
+        #defines time t at the end of the chunk
         end_time = start_time + chunkLength - 1
+        #creates linearly spaced row vectors between the start and end time in accordance with chunk length 
         timeInSamples = np.linspace(start_time, end_time, chunkLength)
+        #convert samples to seconds by dividng by sampling rate (16khz)
         timeInSeconds = timeInSamples/samplingRate
 
         
@@ -162,10 +167,13 @@ def filterChunkList(chunkArray):
 
         for j in range(minFrequency, maxFrequency, int(frequencyInterval)):
             #apply a bunch of different butterworth filters
+            #define max and min in accordance with center
             minBandpass = j-(frequencyInterval/2)
             maxBandpass = j+(frequencyInterval/2)
+            #avoid trying to pass the butterworth filter a negative number
             if minBandpass < 1:
                 minBandpass = 1
+            #create filter object
             sos = scipy.signal.butter(4, [minBandpass, maxBandpass] , btype='bandpass', analog=False, output='sos', fs=16_000) 
             filteredSignal =  scipy.signal.sosfilt(sos, chunkArray[i])
 
