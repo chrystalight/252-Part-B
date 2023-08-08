@@ -118,11 +118,11 @@ def chunkFile(length, gap):
 
     #for every value between 0 and the end of the audio list, start a new chunk, but jump up by chunk length + chunk gap each time
     for i in range(0,len(audioData),chunkLength+chunkGap):
-
         #chunkHolder is a list that temporarily stores the chunk before we add it as an array to chunkedFrameArray, which is an array of arrays
         chunkHolder=[]
         for j in range(chunkLength):
-            #starting at i (j=0) where i is the index of the first value of the active chunk, add each consecutive value till we hit chunk length
+            #this for loop will build the chunks by adding (chunkLength) chunks to each mini arrays
+            #starting at i (where j=0) where i is the index of the first value of the active chunk, add each consecutive value till we hit chunk length
             chunkHolder.append(audioData[i+j])
         chunkedFrameArray.append(chunkHolder)
         
@@ -161,11 +161,8 @@ def filterChunkList(chunkArray):
         #convert samples to seconds by dividng by sampling rate (16khz)
         timeInSeconds = timeInSamples/samplingRate
 
-        
-
-
+        #apply a bunch of different butterworth filters to each chunk :)
         for j in range(minFrequency, maxFrequency, int(frequencyInterval)):
-            #apply a bunch of different butterworth filters
             #define max and min in accordance with center
             minBandpass = j-(frequencyInterval/2)
             maxBandpass = j+(frequencyInterval/2)
@@ -174,6 +171,7 @@ def filterChunkList(chunkArray):
                 minBandpass = 1
             #create filter object
             sos = scipy.signal.butter(4, [minBandpass, maxBandpass] , btype='bandpass', analog=False, output='sos', fs=16_000) 
+            #apply the filter object to the chunk array 
             filteredSignal =  scipy.signal.sosfilt(sos, chunkArray[i])
 
             #calculate the RMS of the butterworth filter
@@ -202,7 +200,7 @@ def main():
 
     chunked = chunkFile(160,0)
     finalArray = filterChunkList(chunked)
-    writeFile(finalArray.astype(np.int16).tobytes(), "output.wav")
+    writeFile(finalArray.astype(np.int16).tobytes(), "output.wav") 
     plotWave("output.wav", "10ms chunks, no gaps") #plots the file titled output.wav
 
     chunkedWithGaps = chunkFile(160, 160)
@@ -210,10 +208,10 @@ def main():
     writeFile(chunkedWithGapsArray.astype(np.int16).tobytes(), "output with 10 ms gaps.wav")
     plotWave("output with 10 ms gaps.wav", "10ms chunks, 10ms gaps")
 
-    # chunkedWithOverlaps = chunkFile(160, -160)
-    # chunkedWithOverlapsArray = filterChunkList(chunkedWithOverlaps)
-    # writeFile(chunkedWithOverlapsArray.astype(np.int16).tobytes(), "output with 10 ms overlap.wav")
-    # plotWave("output with 30 ms overlap.wav", "10ms chunks, 10ms overlap")
+    chunkedWithOverlaps = chunkFile(160, -160)
+    chunkedWithOverlapsArray = filterChunkList(chunkedWithOverlaps)
+    writeFile(chunkedWithOverlapsArray.astype(np.int16).tobytes(), "output with 10 ms overlap.wav")
+    plotWave("output with 30 ms overlap.wav", "10ms chunks, 10ms overlap")
 
     biggerChunks = chunkFile (320, 0)
     biggerChunksArray = filterChunkList(biggerChunks)
