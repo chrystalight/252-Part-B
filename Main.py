@@ -5,6 +5,8 @@ from scipy.io.wavfile import read
 import numpy as np
 import sys
 
+#NOTE: TO RUN THIS CODE, THE INPUT FILE MUST BE NAMED RECORDING.WAV AND MUST BE IN THE SAME FOLDER AS THIS FILE.  
+
 def convertToMono(frameArray):
     #----------------INPUTS-----------
     #frameArray is a STEREO wav file in the form of a bit array
@@ -71,6 +73,9 @@ def plotWave(fileName, title):
 
 
 def processFile():
+    #This function will process the input file into a 16khz mono wav file represented as a frame array
+
+
     with wave.open("Recording.wav", "rb") as inputFile:
         #opened wav file in such a way that it will automatically close when we are done with it (when the with block ends)
         #good for if we end the program early/terminate it (dont have to manually call close every time)
@@ -125,19 +130,23 @@ def chunkFile(length, gap):
     return chunkedFrameArray
 
 def rms(filteredList):
+    #calculates RMS as laid out in project outline
     rms = np.sqrt(np.mean(filteredList**2))
-    return rmser
+    return rms
 
 def filterChunkList(chunkArray):
     # ------------------- INPUTS -------------------
     #chunkArray --> list of sub lists which are each made up of ints, representing a complete wave file
     # ----------------------------------------------   
+
+    #-------------SET FILTER PARAMETERS HERE!!----------------
     minFrequency = 50
     maxFrequency = 7000
     frequencyInterval = 150 
     filteredChunkArray = []
     chunkLength = 160*5
     samplingRate = 16_000
+    #---------------------------------------------------------
 
     for i in range(0, len(chunkArray), 1):
         tempFilterHolder = []
