@@ -101,7 +101,7 @@ def processFile():
 def chunkFile(length, gap):
     # ------------------- INPUTS -------------------
     # input chunk length and gap in frames (ms*16)
-    # negative chunkGap will result in frames overlapping (except not really, it explodes the code later on)
+    # negative chunkGap will result in frames overlapping 
     # ----------------------------------------------
 
     #use scipy to read the processed file (16khz mono) to an array of objects
@@ -114,7 +114,6 @@ def chunkFile(length, gap):
     chunkLength = length
     chunkGap = gap
 
-    #iterate through the audioData array and add lists to a new list, where each list is chunk_frames long
     chunkedFrameArray=[]
 
     #for every value between 0 and the end of the audio list, start a new chunk, but jump up by chunk length + chunk gap each time
@@ -179,11 +178,14 @@ def filterChunkList(chunkArray):
 
             #calculate the RMS of the butterworth filter
             filteredSignal_RMS = rms(filteredSignal)
+            #generates a sin array in the same space as the chunk
             sinArray = np.sin(2*np.pi*j*timeInSeconds)
+            #multiplies the sin array by the filtered rms values to get our synthesized signal chunk
             synthesizedSignal = filteredSignal_RMS * sinArray
 
             tempFilterHolder.append(synthesizedSignal)
-            
+        
+        #here we just add all the synthesized sine waves back together, so we can create a signal that approximates our original signal but is filtered!!!
         tempFilterHolderArray = np.array(tempFilterHolder)
         sumOfWaves = np.sum(tempFilterHolderArray, axis=0)
         filteredChunkArray.append(sumOfWaves)
