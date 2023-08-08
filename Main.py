@@ -126,7 +126,7 @@ def chunkFile(length, gap):
 
 def rms(filteredList):
     rms = np.sqrt(np.mean(filteredList**2))
-    return rms
+    return rmser
 
 def filterChunkList(chunkArray):
     # ------------------- INPUTS -------------------
